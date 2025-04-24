@@ -62,7 +62,9 @@ const searchSchema = Joi.object({
       'string.empty': 'Order number is required for search',
       'any.required': 'Order number is required for search'
     }),
-  page: Joi.number().integer().min(1).optional()
+  page: Joi.number().integer().min(1).optional(),
+  sort: Joi.string().valid('order_no', 'customer_name', 'order_date', 'grand_total').optional(),
+  dir: Joi.string().valid('asc', 'desc').optional()
 }).options({ stripUnknown: true }); // Ignore unknown query parameters
 
 // Schema for date range filter
@@ -78,13 +80,23 @@ const dateFilterSchema = Joi.object({
       'date.min': 'End date must be greater than or equal to start date',
       'any.required': 'End date is required'
     }),
-  page: Joi.number().integer().min(1).optional()
+  page: Joi.number().integer().min(1).optional(),
+  sort: Joi.string().valid('order_no', 'customer_name', 'order_date', 'grand_total').optional(),
+  dir: Joi.string().valid('asc', 'desc').optional()
 }).options({ stripUnknown: true }); // Ignore unknown query parameters
 
-// Schema for pagination
+// Schema for pagination and sorting
 const paginationSchema = Joi.object({
-  page: Joi.number().integer().min(1).optional()
-});
+  page: Joi.number().integer().min(1).optional(),
+  sort: Joi.string().valid('order_no', 'customer_name', 'order_date', 'grand_total').optional()
+    .messages({
+      'any.only': 'Sort field must be one of: order_no, customer_name, order_date, grand_total'
+    }),
+  dir: Joi.string().valid('asc', 'desc').optional()
+    .messages({
+      'any.only': 'Sort direction must be either asc or desc'
+    })
+}).options({ stripUnknown: true });
 
 module.exports = {
   orderSchema,

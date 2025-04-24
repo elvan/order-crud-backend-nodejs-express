@@ -5,17 +5,24 @@ const { generateOrderNumber } = require('../utils/orderNumberGenerator');
 const ExcelJS = require('exceljs');
 
 /**
- * @desc    Get all orders with pagination
+ * @desc    Get all orders with pagination and sorting
  * @route   GET /api/orders
  * @access  Public
  */
 const getOrders = asyncHandler(async (req, res) => {
   const pageSize = 10;
   const page = Number(req.query.page) || 1;
+  const { sort, dir } = req.query;
+
+  // Configure sorting
+  let sortOption = { createdAt: -1 }; // Default sort
+  if (sort && dir) {
+    sortOption = { [sort]: dir === 'asc' ? 1 : -1 };
+  }
 
   const count = await Order.countDocuments({});
   const orders = await Order.find({})
-    .sort({ createdAt: -1 })
+    .sort(sortOption)
     .limit(pageSize)
     .skip(pageSize * (page - 1));
 
@@ -173,12 +180,12 @@ const deleteOrder = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Search orders by order_no
+ * @desc    Search orders by order_no with sorting
  * @route   GET /api/orders/search
  * @access  Public
  */
 const searchOrders = asyncHandler(async (req, res) => {
-  const { order_no } = req.query;
+  const { order_no, sort, dir } = req.query;
   
   if (!order_no) {
     res.status(400);
@@ -188,6 +195,12 @@ const searchOrders = asyncHandler(async (req, res) => {
   const pageSize = 10;
   const page = Number(req.query.page) || 1;
 
+  // Configure sorting
+  let sortOption = { createdAt: -1 }; // Default sort
+  if (sort && dir) {
+    sortOption = { [sort]: dir === 'asc' ? 1 : -1 };
+  }
+
   const count = await Order.countDocuments({ 
     order_no: { $regex: order_no, $options: 'i' }
   });
@@ -195,7 +208,7 @@ const searchOrders = asyncHandler(async (req, res) => {
   const orders = await Order.find({ 
     order_no: { $regex: order_no, $options: 'i' }
   })
-    .sort({ createdAt: -1 })
+    .sort(sortOption)
     .limit(pageSize)
     .skip(pageSize * (page - 1));
 
@@ -208,12 +221,12 @@ const searchOrders = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Filter orders by date range
+ * @desc    Filter orders by date range with sorting
  * @route   GET /api/orders/filter
  * @access  Public
  */
 const filterOrdersByDate = asyncHandler(async (req, res) => {
-  const { start_date, end_date } = req.query;
+  const { start_date, end_date, sort, dir } = req.query;
   
   if (!start_date || !end_date) {
     res.status(400);
@@ -229,6 +242,12 @@ const filterOrdersByDate = asyncHandler(async (req, res) => {
   const pageSize = 10;
   const page = Number(req.query.page) || 1;
 
+  // Configure sorting
+  let sortOption = { createdAt: -1 }; // Default sort
+  if (sort && dir) {
+    sortOption = { [sort]: dir === 'asc' ? 1 : -1 };
+  }
+
   const count = await Order.countDocuments({ 
     order_date: { $gte: startDate, $lte: endDate }
   });
@@ -236,7 +255,7 @@ const filterOrdersByDate = asyncHandler(async (req, res) => {
   const orders = await Order.find({ 
     order_date: { $gte: startDate, $lte: endDate }
   })
-    .sort({ createdAt: -1 })
+    .sort(sortOption)
     .limit(pageSize)
     .skip(pageSize * (page - 1));
 
