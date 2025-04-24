@@ -21,13 +21,21 @@ const getOrders = asyncHandler(async (req, res) => {
   }
 
   const count = await Order.countDocuments({});
-  const orders = await Order.find({})
+  let orders = await Order.find({})
     .sort(sortOption)
     .limit(pageSize)
     .skip(pageSize * (page - 1));
 
+  // Get product counts for each order
+  const ordersWithProductCount = await Promise.all(orders.map(async (order) => {
+    const productCount = await OrderProduct.countDocuments({ order_id: order._id });
+    const orderObj = order.toObject();
+    orderObj.product_count = productCount;
+    return orderObj;
+  }));
+
   res.json({
-    orders,
+    orders: ordersWithProductCount,
     page,
     pages: Math.ceil(count / pageSize),
     total: count
@@ -205,15 +213,23 @@ const searchOrders = asyncHandler(async (req, res) => {
     order_no: { $regex: order_no, $options: 'i' }
   });
   
-  const orders = await Order.find({ 
+  let orders = await Order.find({ 
     order_no: { $regex: order_no, $options: 'i' }
   })
     .sort(sortOption)
     .limit(pageSize)
     .skip(pageSize * (page - 1));
 
+  // Get product counts for each order
+  const ordersWithProductCount = await Promise.all(orders.map(async (order) => {
+    const productCount = await OrderProduct.countDocuments({ order_id: order._id });
+    const orderObj = order.toObject();
+    orderObj.product_count = productCount;
+    return orderObj;
+  }));
+
   res.json({
-    orders,
+    orders: ordersWithProductCount,
     page,
     pages: Math.ceil(count / pageSize),
     total: count
@@ -252,15 +268,23 @@ const filterOrdersByDate = asyncHandler(async (req, res) => {
     order_date: { $gte: startDate, $lte: endDate }
   });
   
-  const orders = await Order.find({ 
+  let orders = await Order.find({ 
     order_date: { $gte: startDate, $lte: endDate }
   })
     .sort(sortOption)
     .limit(pageSize)
     .skip(pageSize * (page - 1));
+    
+  // Get product counts for each order
+  const ordersWithProductCount = await Promise.all(orders.map(async (order) => {
+    const productCount = await OrderProduct.countDocuments({ order_id: order._id });
+    const orderObj = order.toObject();
+    orderObj.product_count = productCount;
+    return orderObj;
+  }));
 
   res.json({
-    orders,
+    orders: ordersWithProductCount,
     page,
     pages: Math.ceil(count / pageSize),
     total: count

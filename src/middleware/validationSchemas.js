@@ -28,6 +28,10 @@ const orderProductSchema = Joi.object({
 
 // Schema for creating/updating order
 const orderSchema = Joi.object({
+  id: Joi.string().regex(/^[0-9a-fA-F]{24}$/).optional()
+    .messages({
+      'string.pattern.base': 'ID must be a valid MongoDB ObjectId'
+    }),
   customer_name: Joi.string().trim().required()
     .messages({
       'string.empty': 'Customer name is required',
