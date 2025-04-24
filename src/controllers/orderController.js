@@ -268,12 +268,12 @@ const filterOrdersByDate = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Export orders to Excel
+ * @desc    Export orders to Excel with filtering, searching, and sorting
  * @route   GET /api/orders/export/excel
  * @access  Public
  */
 const exportOrdersToExcel = asyncHandler(async (req, res) => {
-  const { start_date, end_date } = req.query;
+  const { start_date, end_date, order_no, sort, dir } = req.query;
   
   let query = {};
   
@@ -285,10 +285,38 @@ const exportOrdersToExcel = asyncHandler(async (req, res) => {
     
     query.order_date = { $gte: startDate, $lte: endDate };
   }
+
+  // Apply search filter if provided
+  if (order_no) {
+    query.order_no = { $regex: order_no, $options: 'i' };
+  }
+  
+  // Configure sorting
+  let sortOption = { createdAt: -1 }; // Default sort
+  if (sort && dir) {
+    sortOption = { [sort]: dir === 'asc' ? 1 : -1 };
+  }
   
   // Create a new Excel workbook and worksheet
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Orders');
+  
+  // Add title with filter information
+  let titleRow = worksheet.addRow(['Orders Export']);
+  titleRow.font = { bold: true, size: 16 };
+  worksheet.addRow([]);
+  
+  // Add filter information if any filters are applied
+  if (start_date && end_date) {
+    worksheet.addRow([`Date Range: ${new Date(start_date).toLocaleDateString()} to ${new Date(end_date).toLocaleDateString()}`]);
+  }
+  if (order_no) {
+    worksheet.addRow([`Search: Order number containing "${order_no}"`]);
+  }
+  if (sort && dir) {
+    worksheet.addRow([`Sorted by: ${sort} (${dir === 'asc' ? 'ascending' : 'descending'})`]);
+  }
+  worksheet.addRow([]);
   
   // Define columns
   worksheet.columns = [
@@ -298,21 +326,35 @@ const exportOrdersToExcel = asyncHandler(async (req, res) => {
     { header: 'Grand Total', key: 'grand_total', width: 15 }
   ];
   
-  // Style header row
-  worksheet.getRow(1).font = { bold: true };
+  // Style header row (the actual data headers, not the title)
+  const headerRow = worksheet.lastRow;
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  });
   
-  // Get orders (with cursor for large datasets)
-  const ordersCursor = Order.find(query).cursor();
+  // Get orders (with cursor for large datasets) and apply sorting
+  const ordersCursor = Order.find(query).sort(sortOption).cursor();
   
   // Process orders in batches to handle large datasets efficiently
-  let rowCount = 1; // Start from row 2 after header
+  let rowCount = headerRow.number;
   let order = await ordersCursor.next();
   
   while (order) {
     rowCount++;
     
     // Add order data to worksheet
-    worksheet.addRow({
+    const dataRow = worksheet.addRow({
       order_no: order.order_no,
       customer_name: order.customer_name,
       order_date: order.order_date.toLocaleDateString(),
@@ -322,6 +364,17 @@ const exportOrdersToExcel = asyncHandler(async (req, res) => {
     // Format date and number cells
     worksheet.getCell(`C${rowCount}`).numFmt = 'dd/mm/yyyy';
     worksheet.getCell(`D${rowCount}`).numFmt = '#,##0.00';
+    
+    // Alternate row colors for better readability
+    if (rowCount % 2 === 0) {
+      dataRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFAFAFA' }
+        };
+      });
+    }
     
     // Get next order
     order = await ordersCursor.next();
