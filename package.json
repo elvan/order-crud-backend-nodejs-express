@@ -1,0 +1,33 @@
+{
+  "name": "order-crud-backend",
+  "version": "1.0.0",
+  "description": "Order CRUD Backend API with Node.js, Express, and MongoDB",
+  "keywords": ["order", "crud", "express", "mongodb", "nodejs"],
+  "license": "ISC",
+  "author": "",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "seed": "node src/scripts/seedData.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-async-handler": "^1.2.0",
+    "exceljs": "^4.4.0",
+    "mongoose": "^8.2.3",
+    "morgan": "^1.10.0",
+    "joi": "^17.12.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^9.1.6",
+    "nodemon": "^3.1.0",
+    "supertest": "^6.3.4"
+  }
+}
